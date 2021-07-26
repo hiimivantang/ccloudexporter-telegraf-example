@@ -1,0 +1,53 @@
+version: '3.1'
+
+services:
+  ccloud_exporter:
+    image: dabz/ccloudexporter
+    hostname: ccloud_exporter
+    container_name: ccloud_exporter
+    ports:
+      - 2112:2112
+    environment:
+      CCLOUD_API_KEY: 
+      CCLOUD_API_SECRET: 
+      CCLOUD_CLUSTER: 
+
+  telegraf:
+    image: telegraf:latest
+    hostname: telegraf
+    container_name: telegraf
+    depends_on:
+        - ccloud_exporter
+    volumes:
+        - "./settings/telegraf.conf:/etc/telegraf/telegraf.conf"
+
+  prometheus:
+    image: prom/prometheus
+    hostname: prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    hostname: grafana
+    container_name: grafana
+    depends_on:
+      - prometheus
+    command: cfg:default.log.level="debug"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    ports:
+      - 3000:3000
+
+
+volumes:
+  prometheus-data:
+  grafana-data:
